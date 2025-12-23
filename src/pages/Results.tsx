@@ -6,24 +6,37 @@ import DisclaimerBanner from "@/components/shared/DisclaimerBanner";
 import { 
   Download, 
   ArrowLeft, 
-  AlertTriangle,
   CheckCircle2,
   Info,
   Stethoscope,
   Calendar,
-  FileText
+  FileText,
+  MapPin,
+  Layers,
+  Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface PatientInputs {
+  affectedArea: string | null;
+  affectedAreaId: number | null;
+  areaSize: string | null;
+  areaSizeId: string | null;
+  duration: string | null;
+  durationId: string | null;
+}
 
 const Results = () => {
   const location = useLocation();
   const { toast } = useToast();
-  const { imagePreview, fileName } = location.state || {};
+  const { imagePreview, fileName, patientInputs } = location.state || {};
 
   // If no image data, redirect to upload
   if (!imagePreview) {
     return <Navigate to="/upload" replace />;
   }
+
+  const inputs = patientInputs as PatientInputs | undefined;
 
   // Mock AI results
   const results = {
@@ -89,6 +102,45 @@ const Results = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Image & Results */}
             <div className="space-y-6 animate-slide-up">
+              {/* Patient-Provided Clinical Information */}
+              {inputs && (
+                <div className="bg-card rounded-2xl border border-border p-6">
+                  <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    Patient-Provided Clinical Information
+                  </h3>
+                  <div className="space-y-3">
+                    {inputs.affectedArea && (
+                      <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+                        <MapPin className="w-5 h-5 text-primary shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Affected Body Area</p>
+                          <p className="font-medium">{inputs.affectedArea}</p>
+                        </div>
+                      </div>
+                    )}
+                    {inputs.areaSize && (
+                      <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+                        <Layers className="w-5 h-5 text-primary shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Extent of Area</p>
+                          <p className="font-medium">{inputs.areaSize}</p>
+                        </div>
+                      </div>
+                    )}
+                    {inputs.duration && (
+                      <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+                        <Clock className="w-5 h-5 text-primary shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Duration of Condition</p>
+                          <p className="font-medium">{inputs.duration}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Uploaded Image */}
               <div className="bg-card rounded-2xl border border-border p-6">
                 <h3 className="font-display font-semibold mb-4">Analyzed Image</h3>
@@ -116,7 +168,7 @@ const Results = () => {
 
                   {/* Confidence Score */}
                   <div className="bg-muted/50 rounded-xl p-4">
-                    <p className="text-sm text-muted-foreground mb-2">Model Confidence</p>
+                    <p className="text-sm text-muted-foreground mb-2">AI Confidence Score</p>
                     <div className="flex items-center gap-4">
                       <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                         <div 
@@ -154,7 +206,7 @@ const Results = () => {
                   <div className="flex-1">
                     <h3 className="font-display font-semibold text-lg mb-2">Download PDF Report</h3>
                     <p className="text-primary-foreground/80 text-sm mb-4">
-                      Get a detailed PDF report to share with your healthcare provider.
+                      Get a detailed PDF report including your clinical information to share with your healthcare provider.
                     </p>
                     <Button 
                       variant="hero" 
