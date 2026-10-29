@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/layout/Header";
@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResult, getAnalysisResult } from "@/lib/analysisResults";
 import { downloadPdfReport } from "@/lib/pdfReport";
+import { saveReport } from "@/lib/reportHistory";
 
 interface PatientInputs {
   affectedArea: string | null;
@@ -35,27 +36,46 @@ const Results = () => {
   const [isFindingDermatologist, setIsFindingDermatologist] = useState(false);
   const { imagePreview, fileName, patientInputs, analysisResult } = location.state || {};
 
+  const inputs = patientInputs as PatientInputs | undefined;
+
+  const results = useMemo(() => {
+    const selectedAnalysis = (analysisResult as AnalysisResult | undefined) ??
+      (imagePreview ? getAnalysisResult(imagePreview) : {
+        predictedClass: "Unknown",
+        confidence: 0,
+        riskLevel: "Low" as const,
+      });
+
+    return {
+      ...selectedAnalysis,
+      analysisDate: new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      reportId: `EPI-${Date.now().toString(36).toUpperCase()}`,
+    };
+  }, [analysisResult, imagePreview]);
+
+  useEffect(() => {
+    if (!imagePreview) return;
+
+    saveReport({
+      id: results.reportId,
+      date: results.analysisDate,
+      fileName: fileName ?? "Uploaded image",
+      predictedClass: results.predictedClass,
+      confidence: results.confidence,
+      riskLevel: results.riskLevel,
+    });
+  }, [fileName, imagePreview, results]);
+
   // If no image data, redirect to upload
   if (!imagePreview) {
     return <Navigate to="/upload" replace />;
   }
-
-  const inputs = patientInputs as PatientInputs | undefined;
-
-  const selectedAnalysis = (analysisResult as AnalysisResult | undefined) ??
-    getAnalysisResult(imagePreview);
-
-  const results = {
-    ...selectedAnalysis,
-    analysisDate: new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    reportId: `EPI-${Date.now().toString(36).toUpperCase()}`,
-  };
 
   const getRiskColor = (risk: string) => {
     switch (risk) {

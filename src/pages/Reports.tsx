@@ -13,13 +13,13 @@ import {
   Filter
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getSavedReports } from "@/lib/reportHistory";
 
 const Reports = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
-  // Mock reports data
-  const reports = [
+  const sampleReports = [
     {
       id: "EPI-ABC123",
       date: "December 18, 2024",
@@ -49,6 +49,13 @@ const Reports = () => {
       riskLevel: "Low",
     },
   ];
+  const reports = [...getSavedReports().map((report) => ({
+    id: report.id,
+    date: report.date,
+    prediction: report.predictedClass,
+    confidence: report.confidence,
+    riskLevel: report.riskLevel,
+  })), ...sampleReports];
 
   const filteredReports = reports.filter(
     (report) =>
