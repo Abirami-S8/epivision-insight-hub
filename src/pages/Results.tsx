@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/layout/Header";
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResult, getAnalysisResult } from "@/lib/analysisResults";
+import { downloadPdfReport } from "@/lib/pdfReport";
 
 interface PatientInputs {
   affectedArea: string | null;
@@ -30,6 +32,7 @@ interface PatientInputs {
 const Results = () => {
   const location = useLocation();
   const { toast } = useToast();
+  const [isFindingDermatologist, setIsFindingDermatologist] = useState(false);
   const { imagePreview, fileName, patientInputs, analysisResult } = location.state || {};
 
   // If no image data, redirect to upload
@@ -64,11 +67,87 @@ const Results = () => {
   };
 
   const handleDownload = () => {
-    toast({
-      title: "Download Started",
-      description: "Your PDF report is being generated...",
-    });
-    // In real app, generate and download PDF
+    try {
+      const reportLines = [
+        "EpiVision Insight Hub Report",
+        `Report ID: ${results.reportId}`,
+        `Analysis date: ${results.analysisDate}`,
+        "",
+        `Uploaded image: ${fileName ?? "Not provided"}`,
+        `Predicted class: ${results.predictedClass}`,
+        `AI confidence: ${results.confidence}%`,
+        `Risk indication: ${results.riskLevel} Risk`,
+        "",
+        "Patient-provided clinical information",
+        `Affected body area: ${inputs?.affectedArea ?? "Not provided"}`,
+        `Extent of area: ${inputs?.areaSize ?? "Not provided"}`,
+        `Duration of condition: ${inputs?.duration ?? "Not provided"}`,
+        "",
+        "This is a preliminary screening result, not a medical diagnosis.",
+        "Please consult a qualified healthcare professional.",
+      ];
+
+      downloadPdfReport(reportLines, `${results.reportId}-report.pdf`);
+      toast({
+        title: "Report Downloaded",
+        description: "Your PDF report has been saved.",
+      });
+    } catch (error) {
+      console.error("Unable to generate PDF report", error);
+      toast({
+        title: "Download Failed",
+        description: "The report could not be generated. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFindDermatologist = () => {
+    const mapsWindow = window.open("about:blank", "_blank");
+
+    if (!mapsWindow) {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups to open the nearby dermatologist search.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const openNearbySearch = (url: string, description: string) => {
+      mapsWindow.location.href = url;
+      setIsFindingDermatologist(false);
+      toast({
+        title: "Dermatologist Search Opened",
+        description,
+      });
+    };
+
+    setIsFindingDermatologist(true);
+
+    if (!navigator.geolocation) {
+      openNearbySearch(
+        "https://www.google.com/maps/search/dermatologist",
+        "Showing dermatologist locations. Enable location services for a nearby search.",
+      );
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        openNearbySearch(
+          `https://www.google.com/maps/search/dermatologist/@${coords.latitude},${coords.longitude},14z`,
+          "Showing dermatologists near your current location.",
+        );
+      },
+      () => {
+        openNearbySearch(
+          "https://www.google.com/maps/search/dermatologist",
+          "Location access was unavailable, so showing a general dermatologist search.",
+        );
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
   };
 
   return (
@@ -233,8 +312,12 @@ const Results = () => {
                       For proper diagnosis and treatment, please schedule an appointment with a 
                       qualified dermatologist. Share this report during your consultation.
                     </p>
-                    <Button variant="medical">
-                      Find a Dermatologist Near You
+                    <Button
+                      variant="medical"
+                      onClick={handleFindDermatologist}
+                      disabled={isFindingDermatologist}
+                    >
+                      {isFindingDermatologist ? "Finding nearby..." : "Find a Dermatologist Near You"}
                     </Button>
                   </div>
                 </div>
