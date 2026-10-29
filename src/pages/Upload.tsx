@@ -12,6 +12,7 @@ import DurationSelector from "@/components/upload/DurationSelector";
 import ImageUploadStep from "@/components/upload/ImageUploadStep";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getAnalysisResult } from "@/lib/analysisResults";
 
 const bodyAreaLabels: Record<number, string> = {
   0: "Head / Face / Scalp",
@@ -100,6 +101,7 @@ const Upload = () => {
         state: { 
           imagePreview: preview,
           fileName: selectedFile?.name,
+          analysisResult: preview ? getAnalysisResult(preview) : null,
           patientInputs: {
             affectedArea: affectedArea !== null ? bodyAreaLabels[affectedArea] : null,
             affectedAreaId: affectedArea,

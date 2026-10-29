@@ -16,6 +16,7 @@ import {
   Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AnalysisResult, getAnalysisResult } from "@/lib/analysisResults";
 
 interface PatientInputs {
   affectedArea: string | null;
@@ -29,7 +30,7 @@ interface PatientInputs {
 const Results = () => {
   const location = useLocation();
   const { toast } = useToast();
-  const { imagePreview, fileName, patientInputs } = location.state || {};
+  const { imagePreview, fileName, patientInputs, analysisResult } = location.state || {};
 
   // If no image data, redirect to upload
   if (!imagePreview) {
@@ -38,11 +39,11 @@ const Results = () => {
 
   const inputs = patientInputs as PatientInputs | undefined;
 
-  // Mock AI results
+  const selectedAnalysis = (analysisResult as AnalysisResult | undefined) ??
+    getAnalysisResult(imagePreview);
+
   const results = {
-    predictedClass: "Melanocytic Nevi",
-    confidence: 89,
-    riskLevel: "Low" as "Low" | "Medium" | "High",
+    ...selectedAnalysis,
     analysisDate: new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
